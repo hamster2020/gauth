@@ -1,23 +1,27 @@
 package mapstore
 
-import "errors"
+import (
+	"errors"
 
-type mapStore map[string]string
+	"github.com/hamster2020/gauth"
+)
+
+type mapStore map[string]gauth.User
 
 var notFoundErr = errors.New("not found")
 
 func NewMapStore() mapStore {
-	return make(map[string]string)
+	return make(map[string]gauth.User)
 }
 
-func (m mapStore) set(key, value string) {
+func (m mapStore) set(key string, value gauth.User) {
 	m[key] = value
 }
 
-func (m mapStore) get(key string) (string, error) {
+func (m mapStore) get(key string) (gauth.User, error) {
 	value, found := m[key]
 	if !found {
-		return "", notFoundErr
+		return gauth.User{}, notFoundErr
 	}
 
 	return value, nil

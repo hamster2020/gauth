@@ -3,6 +3,7 @@ package mapstore
 import (
 	"testing"
 
+	"github.com/hamster2020/gauth"
 	"github.com/stretchr/testify/require"
 )
 
@@ -10,8 +11,8 @@ func TestMapstoreCRUD(t *testing.T) {
 	m := NewMapStore()
 
 	key := "key"
-	value := "value"
-	newValue := "new value"
+	value := gauth.User{Email: "old"}
+	newValue := gauth.User{Email: "new"}
 
 	v, err := m.get(key)
 	require.Equal(t, notFoundErr, err)

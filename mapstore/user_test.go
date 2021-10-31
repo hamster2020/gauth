@@ -14,64 +14,76 @@ func TestUserCRUD(t *testing.T) {
 	hash := "hash"
 	newHash := "new hash"
 
-	c := gauth.User{Email: email, PasswordHash: hash}
+	roles := gauth.RolesAdmin
+	newRoles := gauth.RolesBase
+
+	user := gauth.User{Email: email, PasswordHash: hash, Roles: roles}
 	m := NewMapStore()
 
 	// look up user - not found
-	testC, err := m.UserByEmail(email)
+	testUser, err := m.UserByEmail(email)
 	require.Equal(t, notFoundErr, err)
-	require.Zero(t, testC)
+	require.Zero(t, testUser)
 
 	// update user - not found
-	err = m.UpdateUser(email, c)
+	err = m.UpdateUser(email, user)
 	require.Equal(t, notFoundErr, err)
 
 	// create user
-	err = m.CreateUser(c)
+	err = m.CreateUser(user)
 	require.NoError(t, err)
 
 	// create user - already exists
-	err = m.CreateUser(c)
+	err = m.CreateUser(user)
 	require.Equal(t, userExistsErr, err)
 
 	// look up user
-	testC, err = m.UserByEmail(email)
+	testUser, err = m.UserByEmail(email)
 	require.NoError(t, err)
-	require.Equal(t, c, testC)
+	require.Equal(t, user, testUser)
+
+	// update roles
+	user.Roles = newRoles
+	err = m.UpdateUser(email, user)
+	require.NoError(t, err)
+
+	testUser, err = m.UserByEmail(email)
+	require.NoError(t, err)
+	require.Equal(t, user, testUser)
 
 	// update hash
-	c.PasswordHash = newHash
-	err = m.UpdateUser(email, c)
+	user.PasswordHash = newHash
+	err = m.UpdateUser(email, user)
 	require.NoError(t, err)
 
-	testC, err = m.UserByEmail(email)
+	testUser, err = m.UserByEmail(email)
 	require.NoError(t, err)
-	require.Equal(t, c, testC)
+	require.Equal(t, user, testUser)
 
 	// update email
-	c.Email = newEmail
-	err = m.UpdateUser(email, c)
+	user.Email = newEmail
+	err = m.UpdateUser(email, user)
 	require.NoError(t, err)
 
-	testC, err = m.UserByEmail(email)
+	testUser, err = m.UserByEmail(email)
 	require.Equal(t, notFoundErr, err)
-	require.Zero(t, testC)
+	require.Zero(t, testUser)
 
-	testC, err = m.UserByEmail(newEmail)
+	testUser, err = m.UserByEmail(newEmail)
 	require.NoError(t, err)
-	require.Equal(t, c, testC)
+	require.Equal(t, user, testUser)
 
 	// list users
-	cs, err := m.Users()
+	users, err := m.Users()
 	require.NoError(t, err)
-	require.Len(t, cs, 1)
-	require.Equal(t, c, cs[0])
+	require.Len(t, users, 1)
+	require.Equal(t, user, users[0])
 
 	// delete user
 	err = m.DeleteUser(newEmail)
 	require.NoError(t, err)
 
-	testC, err = m.UserByEmail(email)
+	testUser, err = m.UserByEmail(newEmail)
 	require.Equal(t, notFoundErr, err)
-	require.Zero(t, testC)
+	require.Zero(t, testUser)
 }
