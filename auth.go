@@ -7,5 +7,5 @@ type Credentials struct {
 
 type AuthLogic interface {
 	// General Use
-	Authenticate(c Credentials) (bool, error)
+	Authenticate(c Credentials) (string, error)
 }

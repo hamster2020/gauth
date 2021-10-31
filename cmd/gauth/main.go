@@ -9,6 +9,7 @@ import (
 	"github.com/hamster2020/gauth/logic"
 	"github.com/hamster2020/gauth/mapstore"
 	passwordvalidator "github.com/hamster2020/gauth/password-validator"
+	"github.com/hamster2020/gauth/token"
 )
 
 func main() {
@@ -18,11 +19,19 @@ func main() {
 		return
 	}
 
+	token, err := token.NewToken(cfg.AccessTokenExpMinutes)
+	if err != nil {
+		log.Fatalf("Failed to set up new token: %v", err)
+		return
+	}
+
 	db := mapstore.NewMapStore()
+
 	emailValidator := emailvalidator.NewEmailValidator(cfg.EmailVerifierToken)
 	passwordValidator := passwordvalidator.NewPasswordValidator(cfg.PwnedPasswordsURL)
-	logic := logic.NewLogic(db, emailValidator, passwordValidator)
-	apiHandler := api.NewAPIHandler(cfg, logic)
+	logic := logic.NewLogic(token, db, emailValidator, passwordValidator)
+
+	apiHandler := api.NewAPIHandler(cfg, token, logic)
 
 	apiHandler.ListenAndServe()
 }

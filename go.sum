@@ -4,6 +4,8 @@ github.com/chrismrivera/cmd v0.0.0-20160722152629-70720e9a3aa0 h1:x8QRGxqw7jBXuT
 github.com/chrismrivera/cmd v0.0.0-20160722152629-70720e9a3aa0/go.mod h1:Boz8yNVfaFUSj/HQdPdKYjdTKZaGWW6D0C0eLZgAjoo=
 github.com/davecgh/go-spew v1.1.0 h1:ZDRjVQ15GmhC3fiQ8ni8+OwkZQO4DARzQgrnXU1Liz8=
 github.com/davecgh/go-spew v1.1.0/go.mod h1:J7Y8YcW2NihsgmVo/mv3lAwl/skON4iLHjSsI+c5H38=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible h1:7qlOGliEKZXTDg6OTjfoBKDXWrumCAMpl/TFQ4/5kLM=
+github.com/dgrijalva/jwt-go v3.2.0+incompatible/go.mod h1:E3ru+11k8xSBh+hMPgOLZmtrrCbhqsmaPHjLKYnJCaQ=
 github.com/email-verifier/verifier-go v0.0.0-20190212183956-b76ff01912ea h1:a5uSg7yivYF+AaKJhmRcS/ZDDr6SYNioLyTXCZLJvzU=
 github.com/email-verifier/verifier-go v0.0.0-20190212183956-b76ff01912ea/go.mod h1:KV8UXay++uI3xtS7TCD8NsvHIvRfjq2xVi+zMR3bQ9c=
 github.com/hamster2020/mockit v1.1.1-0.20211021045419-fde67066ef61 h1:eHFe8sNAgzkWaegFLd9OMSOiQdwilHP1v4jrKQuAy4E=

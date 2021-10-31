@@ -36,7 +36,8 @@ var authenticateCommand = cmd.NewCommand("auth", "Authenticate", "Authenticate",
 			return err
 		}
 
-		if err := app.do(req, nil); err != nil {
+		var token string
+		if err := app.do(req, &token); err != nil {
 			return err
 		}
 

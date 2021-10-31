@@ -1,6 +1,8 @@
 package gauth
 
-import "github.com/joeshaw/envdecode"
+import (
+	"github.com/joeshaw/envdecode"
+)
 
 type Config struct {
 	CredAddress string `env:"GAUTH_URL_ADDRESS,default=0.0.0.0:3000"`
@@ -8,6 +10,8 @@ type Config struct {
 
 	EmailVerifierToken string `env:"GAUTH_EMAIL_VERIFIER_TOKEN"`
 	PwnedPasswordsURL  string `env:"GAUTH_PWNED_PASSWORDS_URL"`
+
+	AccessTokenExpMinutes uint8 `env:"GAUTH_ACCESS_TOKEN_EXP_MINUTES,default=5"`
 }
 
 func NewConfig() (Config, error) {

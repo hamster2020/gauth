@@ -15,7 +15,10 @@ func TestAuthenticate(t *testing.T) {
 	expCred := gauth.Credentials{Email: expEmail, Password: expPassword}
 
 	expHash := "hash"
-	expUser := gauth.User{Email: expEmail, PasswordHash: expHash}
+	expRoles := gauth.RolesAdmin
+	expUser := gauth.User{Email: expEmail, PasswordHash: expHash, Roles: expRoles}
+
+	expToken := "token"
 
 	cases := []struct {
 		name string
@@ -23,8 +26,12 @@ func TestAuthenticate(t *testing.T) {
 		retUserByEmailErr error
 
 		expCheckPasswordFuncCalled bool
+		retCheckPasswordFunc       bool
 
-		expRet bool
+		expNewUserTokenCalled bool
+		retNewUserTokenErr    error
+
+		expRet string
 		expErr error
 	}{
 		{
@@ -35,7 +42,23 @@ func TestAuthenticate(t *testing.T) {
 		{
 			name:                       "ok",
 			expCheckPasswordFuncCalled: true,
-			expRet:                     true,
+			retCheckPasswordFunc:       false,
+			expErr:                     errors.New("unauthorized"),
+		},
+		{
+			name:                       "NewUserToken error",
+			expCheckPasswordFuncCalled: true,
+			retCheckPasswordFunc:       true,
+			expNewUserTokenCalled:      true,
+			retNewUserTokenErr:         errors.New("NewUserToken error"),
+			expErr:                     errors.New("NewUserToken error"),
+		},
+		{
+			name:                       "ok",
+			expCheckPasswordFuncCalled: true,
+			retCheckPasswordFunc:       true,
+			expNewUserTokenCalled:      true,
+			expRet:                     expToken,
 		},
 	}
 
@@ -55,15 +78,26 @@ func TestAuthenticate(t *testing.T) {
 				checkPasswordFuncCalled = true
 				require.Equal(t, expPassword, password)
 				require.Equal(t, expHash, hash)
-				return true
+				return tc.retCheckPasswordFunc
 			}
 
-			ret, err := authenticate(ds, expCred, checkPasswordFunc)
+			token := mocks.NewMockToken()
+
+			newUserTokenCalled := false
+			token.NewUserTokenFunc = func(email string, roles gauth.Roles) (string, error) {
+				newUserTokenCalled = true
+				require.Equal(t, expEmail, email)
+				require.Equal(t, expRoles, roles)
+				return expToken, tc.retNewUserTokenErr
+			}
+
+			ret, err := authenticate(ds, token, expCred, checkPasswordFunc)
 			require.Equal(t, tc.expErr, err)
 			require.Equal(t, tc.expRet, ret)
 
 			require.True(t, userByEmailFuncCalled)
 			require.Equal(t, tc.expCheckPasswordFuncCalled, checkPasswordFuncCalled)
+			require.Equal(t, tc.expNewUserTokenCalled, newUserTokenCalled)
 		})
 	}
 }

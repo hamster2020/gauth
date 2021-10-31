@@ -17,12 +17,13 @@ func TestAuthenticate(t *testing.T) {
 	expPassword := "P@ssword"
 	expCred := gauth.Credentials{Email: expEmail, Password: expPassword}
 
+	expToken := "token"
+
 	cases := []struct {
 		name string
 		body interface{}
 
 		expCalled bool
-		retPass   bool
 		retErr    error
 
 		expStatus int
@@ -38,36 +39,26 @@ func TestAuthenticate(t *testing.T) {
 			name:      "logic.Autheticate error",
 			body:      expCred,
 			expCalled: true,
-			retPass:   true,
 			retErr:    errors.New("logic.Autheticate error"),
-			expStatus: http.StatusInternalServerError,
-			expBody:   `{"error":"logic.Autheticate error"}`,
-		},
-		{
-			name:      "invalid credentials",
-			body:      expCred,
-			expCalled: true,
-			retPass:   false,
 			expStatus: http.StatusUnauthorized,
-			expBody:   `{"error":"invalid credentials"}`,
+			expBody:   `{"error":"logic.Autheticate error"}`,
 		},
 		{
 			name:      "ok",
 			body:      expCred,
 			expCalled: true,
-			retPass:   true,
 			expStatus: http.StatusOK,
-			expBody:   `{}`,
+			expBody:   `"token"`,
 		},
 	}
 
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {
 			called := false
-			th.logic.AuthenticateFunc = func(c gauth.Credentials) (bool, error) {
+			th.logic.AuthenticateFunc = func(c gauth.Credentials) (string, error) {
 				called = true
 				require.Equal(t, tc.body, c)
-				return tc.retPass, tc.retErr
+				return expToken, tc.retErr
 			}
 
 			byt := mustMarshal(t, tc.body)
