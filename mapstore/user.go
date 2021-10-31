@@ -2,32 +2,37 @@ package mapstore
 
 import (
 	"errors"
+	"sort"
 
 	"github.com/hamster2020/gauth"
 )
 
 var userExistsErr = errors.New("user with email already exists")
 
-func newCred(email, hash string) gauth.User {
-	return gauth.User{Email: email, PasswordHash: hash}
+func newCred(email, hash string, roles gauth.Roles) gauth.User {
+	return gauth.User{Email: email, PasswordHash: hash, Roles: roles}
 }
 
 func (m mapStore) CreateUser(user gauth.User) error {
-	if hash, err := m.get(user.Email); hash != "" && err == nil {
+	_, err := m.get(user.Email)
+	if err == nil {
 		return userExistsErr
 	}
+	if err != notFoundErr {
+		return err
+	}
 
-	m.set(user.Email, user.PasswordHash)
+	m.set(user.Email, user)
 	return nil
 }
 
 func (m mapStore) UserByEmail(email string) (gauth.User, error) {
-	hash, err := m.get(email)
+	user, err := m.get(email)
 	if err != nil {
 		return gauth.User{}, err
 	}
 
-	return newCred(email, hash), nil
+	return user, nil
 }
 
 func (m mapStore) UpdateUser(email string, user gauth.User) error {
@@ -36,13 +41,13 @@ func (m mapStore) UpdateUser(email string, user gauth.User) error {
 		return err
 	}
 
-	if email == user.Email {
-		m.set(email, user.PasswordHash)
+	if email != user.Email {
+		m.delete(email)
+		m.set(user.Email, user)
 		return nil
 	}
 
-	m.delete(email)
-	m.set(user.Email, user.PasswordHash)
+	m.set(email, user)
 	return nil
 }
 
@@ -54,10 +59,11 @@ func (m mapStore) DeleteUser(email string) error {
 func (m mapStore) Users() ([]gauth.User, error) {
 	ret := make([]gauth.User, len(m))
 	i := 0
-	for email, hash := range m {
-		ret[i] = gauth.User{Email: email, PasswordHash: hash}
+	for _, user := range m {
+		ret[i] = user
 		i++
 	}
+	sort.Slice(ret, func(i, j int) bool { return ret[i].Email < ret[j].Email })
 
 	return ret, nil
 }

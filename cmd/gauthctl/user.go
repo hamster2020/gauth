@@ -3,6 +3,7 @@ package main
 import (
 	"fmt"
 	"net/http"
+	"strings"
 	"syscall"
 
 	"github.com/chrismrivera/cmd"
@@ -24,6 +25,7 @@ func init() {
 var createUserCommand = cmd.NewCommand("create-user", "User", "Create a new user",
 	func(cmd *cmd.Command) {
 		cmd.AppendArg("email", "Email")
+		cmd.AppendArg("roles", "Comma-separated list of role names. Ex: 'admin,base'")
 	},
 
 	func(cmd *cmd.Command) error {
@@ -33,12 +35,19 @@ var createUserCommand = cmd.NewCommand("create-user", "User", "Create a new user
 			return err
 		}
 
-		emailAndPassword := gauth.Credentials{
-			Email:    cmd.Arg("email").String(),
-			Password: string(passwordBytes),
+		names := strings.Split(cmd.Arg("roles").String(), ",")
+		roles, err := gauth.RolesFromNames(names)
+		if err != nil {
+			return err
 		}
 
-		req, err := app.makeRequest(http.MethodPost, "users", emailAndPassword)
+		r := gauth.UserRequest{
+			Email:    cmd.Arg("email").String(),
+			Password: string(passwordBytes),
+			Roles:    roles,
+		}
+
+		req, err := app.makeRequest(http.MethodPost, "users", r)
 		if err != nil {
 			return err
 		}
@@ -78,11 +87,12 @@ var updateUserCommand = cmd.NewCommand("update-user", "User", "Update an existin
 		cmd.AppendArg("email", "Email")
 		cmd.Flags.String("new-email", "", "New email")
 		cmd.Flags.Bool("password", false, "Change password")
+		cmd.Flags.String("role", "", "New comma-seaparated list of roles. Ex: 'admin,base'")
 	},
 
 	func(cmd *cmd.Command) error {
-		emailAndPassword := gauth.Credentials{
-			Email: cmd.Arg("new-email").String(),
+		r := gauth.UserRequest{
+			Email: cmd.Flag("new-email").String(),
 		}
 
 		newPassword, err := cmd.Flag("password").Bool()
@@ -91,17 +101,26 @@ var updateUserCommand = cmd.NewCommand("update-user", "User", "Update an existin
 		}
 
 		if newPassword {
-			fmt.Println("please provide a password")
 			passwordBytes, err := terminal.ReadPassword(syscall.Stdin)
 			if err != nil {
 				return err
 			}
 
-			emailAndPassword.Password = string(passwordBytes)
+			r.Password = string(passwordBytes)
+		}
+
+		namesStr := cmd.Flag("role").String()
+		if namesStr != "" {
+			names := strings.Split(namesStr, ",")
+			roles, err := gauth.RolesFromNames(names)
+			if err != nil {
+				return err
+			}
+			r.Roles = roles
 		}
 
 		u := fmt.Sprintf("users/%s", cmd.Arg("email").String())
-		req, err := app.makeRequest(http.MethodPost, u, emailAndPassword)
+		req, err := app.makeRequest(http.MethodPost, u, r)
 		if err != nil {
 			return err
 		}
