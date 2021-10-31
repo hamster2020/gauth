@@ -28,8 +28,9 @@ type testHandler struct {
 func newTestHandler(t *testing.T) *testHandler {
 	cfg := mustCreateConfig(t)
 	logic := mocks.NewMockLogic()
+	token := mocks.NewMockToken()
 	return &testHandler{
-		server: httptest.NewServer(NewAPIHandler(cfg, logic)),
+		server: httptest.NewServer(NewAPIHandler(cfg, token, logic)),
 		cfg:    cfg,
 		logic:  logic,
 	}

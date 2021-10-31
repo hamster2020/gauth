@@ -13,13 +13,15 @@ import (
 type apiHandler struct {
 	mux   *http.ServeMux
 	cfg   gauth.Config
+	token gauth.Token
 	logic gauth.Logic
 }
 
-func NewAPIHandler(cfg gauth.Config, logic gauth.Logic) apiHandler {
+func NewAPIHandler(cfg gauth.Config, token gauth.Token, logic gauth.Logic) apiHandler {
 	h := apiHandler{
 		mux:   http.NewServeMux(),
 		cfg:   cfg,
+		token: token,
 		logic: logic,
 	}
 

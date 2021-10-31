@@ -1,7 +1,6 @@
 package api
 
 import (
-	"errors"
 	"net/http"
 
 	"github.com/hamster2020/gauth"
@@ -17,17 +16,12 @@ func authenticate(logic gauth.Logic) http.HandlerFunc {
 			return
 		}
 
-		pass, err := logic.Authenticate(r)
+		token, err := logic.Authenticate(r)
 		if err != nil {
-			writeJSONError(crw, err, http.StatusInternalServerError)
+			writeJSONError(crw, err, http.StatusUnauthorized)
 			return
 		}
 
-		if !pass {
-			writeJSONError(crw, errors.New("invalid credentials"), http.StatusUnauthorized)
-			return
-		}
-
-		writeJSON(crw, nil)
+		writeJSON(crw, token)
 	}
 }
