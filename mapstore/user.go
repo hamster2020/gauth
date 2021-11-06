@@ -41,13 +41,8 @@ func (m mapStore) UpdateUser(email string, user gauth.User) error {
 		return err
 	}
 
-	if email != user.Email {
-		m.delete(email)
-		m.set(user.Email, user)
-		return nil
-	}
-
-	m.set(email, user)
+	m.delete(email)
+	m.set(user.Email, user)
 	return nil
 }
 

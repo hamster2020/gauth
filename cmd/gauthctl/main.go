@@ -2,17 +2,19 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"os"
 	"strings"
 
 	"github.com/chrismrivera/cmd"
+	"github.com/hamster2020/gauth/gauthclient"
 )
 
-func getCredURL() string {
-	url := strings.TrimSpace(os.Getenv("CRED_WEB_URL"))
+func getGauthURL() string {
+	url := strings.TrimSpace(os.Getenv("GAUTH_WEB_URL"))
 	if url == "" {
 		url = "http://localhost:3000"
-		fmt.Println("CRED_WEB_URL not set, using default")
+		fmt.Println("GAUTH_WEB_URL not set, using default")
 	}
 
 	return url
@@ -23,7 +25,23 @@ func main() {
 
 	if len(os.Args) >= 2 && os.Args[1] != "--help" {
 		if _, ok := app.Commands[os.Args[1]]; ok {
-			app.baseURL = getCredURL()
+			app.baseURL = getGauthURL()
+
+			tokenInfo, err := readTokenInfo()
+			if err != nil {
+				log.Fatal(err)
+			}
+
+			app.gauthClient, err = gauthclient.NewGauthClient(
+				getGauthURL(),
+				tokenInfo.Email,
+				"",
+				tokenInfo.Token,
+				saveTokenInfo,
+			)
+			if err != nil {
+				log.Fatal(err)
+			}
 		}
 	}
 
