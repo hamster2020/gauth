@@ -2,11 +2,9 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"syscall"
 
 	"github.com/chrismrivera/cmd"
-	"github.com/hamster2020/gauth"
 	"golang.org/x/crypto/ssh/terminal"
 )
 
@@ -26,18 +24,9 @@ var authenticateCommand = cmd.NewCommand("auth", "Authenticate", "Authenticate",
 			return err
 		}
 
-		cred := gauth.Credentials{
-			Email:    cmd.Arg("email").String(),
-			Password: string(passwordBytes),
-		}
-
-		req, err := app.makeRequest(http.MethodPost, "authenticate", cred)
-		if err != nil {
-			return err
-		}
-
-		var token string
-		if err := app.do(req, &token); err != nil {
+		email := cmd.Arg("email").String()
+		password := string(passwordBytes)
+		if err := app.gauthClient.Authenticate(email, password); err != nil {
 			return err
 		}
 

@@ -9,12 +9,14 @@ import (
 
 	"github.com/chrismrivera/cmd"
 	"github.com/hamster2020/gauth"
+	"github.com/hamster2020/gauth/gauthclient"
 )
 
 type gauthCtl struct {
 	*cmd.App
 	*http.Client
-	baseURL string
+	gauthClient gauthclient.GauthClient
+	baseURL     string
 }
 
 var app = gauthCtl{

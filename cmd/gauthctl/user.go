@@ -2,7 +2,6 @@ package main
 
 import (
 	"fmt"
-	"net/http"
 	"strings"
 	"syscall"
 
@@ -47,12 +46,7 @@ var createUserCommand = cmd.NewCommand("create-user", "User", "Create a new user
 			Roles:    roles,
 		}
 
-		req, err := app.makeRequest(http.MethodPost, "users", r)
-		if err != nil {
-			return err
-		}
-
-		if err := app.do(req, nil); err != nil {
+		if err := app.gauthClient.CreateUser(r); err != nil {
 			return err
 		}
 
@@ -67,18 +61,13 @@ var userByEmailCommand = cmd.NewCommand("get-user", "User", "Lookup an existing 
 	},
 
 	func(cmd *cmd.Command) error {
-		u := fmt.Sprintf("users/%s", cmd.Arg("email").String())
-		req, err := app.makeRequest(http.MethodGet, u, nil)
+		email := cmd.Arg("email").String()
+		user, err := app.gauthClient.UserByEmail(email)
 		if err != nil {
 			return err
 		}
 
-		var c gauth.User
-		if err := app.do(req, &c); err != nil {
-			return err
-		}
-
-		return jsonPrint(c)
+		return jsonPrint(user)
 	},
 )
 
@@ -119,13 +108,8 @@ var updateUserCommand = cmd.NewCommand("update-user", "User", "Update an existin
 			r.Roles = roles
 		}
 
-		u := fmt.Sprintf("users/%s", cmd.Arg("email").String())
-		req, err := app.makeRequest(http.MethodPost, u, r)
-		if err != nil {
-			return err
-		}
-
-		if err := app.do(req, nil); err != nil {
+		email := cmd.Arg("email").String()
+		if err := app.gauthClient.UpdateUser(email, r); err != nil {
 			return err
 		}
 
@@ -140,13 +124,8 @@ var deleteUserCommand = cmd.NewCommand("delete-user", "User", "Delete a user by 
 	},
 
 	func(cmd *cmd.Command) error {
-		u := fmt.Sprintf("users/%s", cmd.Arg("email").String())
-		req, err := app.makeRequest(http.MethodDelete, u, nil)
-		if err != nil {
-			return err
-		}
-
-		if err := app.do(req, nil); err != nil {
+		email := cmd.Arg("email").String()
+		if err := app.gauthClient.DeleteUser(email); err != nil {
 			return err
 		}
 
@@ -159,16 +138,11 @@ var listUsersCommand = cmd.NewCommand("list-users", "User", "List all existing u
 	func(cmd *cmd.Command) {},
 
 	func(cmd *cmd.Command) error {
-		req, err := app.makeRequest(http.MethodGet, "users", nil)
+		users, err := app.gauthClient.ListUsers()
 		if err != nil {
 			return err
 		}
 
-		var cs []gauth.User
-		if err := app.do(req, &cs); err != nil {
-			return err
-		}
-
-		return jsonPrint(cs)
+		return jsonPrint(users)
 	},
 )
