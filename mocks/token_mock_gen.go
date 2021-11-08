@@ -10,8 +10,9 @@ import (
 )
 
 type MockToken struct {
-	PublicKeyFunc    func() rsa.PublicKey
-	NewUserTokenFunc func(email string, roles gauth.Roles) (string, error)
+	PublicKeyFunc       func() rsa.PublicKey
+	NewUserTokenFunc    func(email string, roles gauth.Roles) (string, error)
+	VerifyUserTokenFunc func(tokenStr string) (gauth.User, error)
 }
 
 func NewMockToken() *MockToken {
@@ -24,4 +25,8 @@ func (token *MockToken) PublicKey() rsa.PublicKey {
 
 func (token *MockToken) NewUserToken(email string, roles gauth.Roles) (string, error) {
 	return token.NewUserTokenFunc(email, roles)
+}
+
+func (token *MockToken) VerifyUserToken(tokenStr string) (gauth.User, error) {
+	return token.VerifyUserTokenFunc(tokenStr)
 }

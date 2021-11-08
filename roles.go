@@ -1,6 +1,9 @@
 package gauth
 
-import "fmt"
+import (
+	"errors"
+	"fmt"
+)
 
 type Roles uint8
 
@@ -21,6 +24,22 @@ func (r *Roles) DropRole(role Roles) {
 	*r &^= role
 }
 
+func (r Roles) HasAtLeastOneRole(roles Roles) bool {
+	return r&roles != 0
+}
+
+func (r Roles) Validate() error {
+	if r == Roles(0) {
+		return errors.New("empty role not allowed")
+	}
+
+	if r > AllRoles() {
+		return errors.New("unknown role not allowed")
+	}
+
+	return nil
+}
+
 type RoleName string
 
 const (
@@ -31,6 +50,14 @@ const (
 var rolesAndNames = map[RoleName]Roles{
 	RoleNameAdmin: RolesAdmin,
 	RoleNameBase:  RolesBase,
+}
+
+func AllRoles() Roles {
+	all := Roles(0)
+	for _, role := range rolesAndNames {
+		all.AddRole(role)
+	}
+	return all
 }
 
 func RoleFromName(n string) (Roles, error) {

@@ -63,7 +63,7 @@ func TestAuthenticate(t *testing.T) {
 
 			byt := mustMarshal(t, tc.body)
 			bodyReader := bytes.NewBuffer(byt)
-			req := th.makeRequest(t, http.MethodPost, "/authenticate", bodyReader)
+			req := th.makeRequest(t, http.MethodPost, "/authenticate", bodyReader, "")
 
 			resp := mustDo(t, req)
 			defer resp.Body.Close()

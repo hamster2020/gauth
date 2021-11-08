@@ -133,7 +133,7 @@ func (a *AuthClient) doRequestCanRetry(req *http.Request, respBody interface{}, 
 	}
 
 	if a.token != "" {
-		req.Header.Set("Authorization", "Bearer "+a.token)
+		req.Header.Set("Authorization", "Bearer: "+a.token)
 	}
 	resp, err := a.client.Do(req)
 	if err != nil {
