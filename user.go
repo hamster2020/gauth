@@ -6,6 +6,18 @@ type User struct {
 	Roles        Roles  `json:"roles"`
 }
 
+func (u User) Info() string {
+	return u.Email
+}
+
+func (u User) HasRole(role Roles) bool {
+	return u.Roles.HasRole(role)
+}
+
+func (u User) HasAtLeastOneRole(roles Roles) bool {
+	return u.Roles.HasAtLeastOneRole(roles)
+}
+
 type UserRequest struct {
 	Email    string `json:"email"`
 	Password string `json:"password"`

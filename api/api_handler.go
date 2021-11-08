@@ -46,12 +46,18 @@ func (h apiHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 			}
 		}()
 
+		if err := loadCaller(h.token, crw, req); err != nil {
+			writeJSONError(crw, err, http.StatusInternalServerError)
+			return
+		}
+
 		h.mux.ServeHTTP(crw, req)
 	}()
 
 	duration := time.Since(start)
-
-	log.Printf("HTTP: method=%s url=%s duration=%s status=%d remote-addr=%s",
+	caller := getCallerFromRequest(req)
+	log.Printf("HTTP: caller=%s method=%s url=%s duration=%s status=%d remote-addr=%s",
+		caller.Info(),
 		req.Method,
 		req.URL.String(),
 		duration,

@@ -14,24 +14,39 @@ import (
 
 func TestUsers(t *testing.T) {
 	th := newTestHandler(t)
-	expUsers := []gauth.User{{Email: "test@email.com", PasswordHash: "hash", Roles: gauth.RolesAdmin}}
+	expEmail := "test@email.com"
+	expHash := "hash"
+	expRoles := gauth.RolesAdmin
+	expUsers := []gauth.User{{Email: expEmail, PasswordHash: expHash, Roles: expRoles}}
 
 	cases := []struct {
-		name string
+		name  string
+		token string
 
-		retErr error
+		expCalled bool
+		retErr    error
 
 		expStatus int
 		expBody   string
 	}{
 		{
+			name:      "non-admin",
+			token:     th.newToken(t, expEmail, gauth.RolesBase),
+			expStatus: http.StatusForbidden,
+			expBody:   `{"error":"forbidden"}`,
+		},
+		{
 			name:      "logic.Users error",
+			token:     th.newToken(t, expEmail, expRoles),
+			expCalled: true,
 			retErr:    errors.New("logic.Users error"),
 			expStatus: http.StatusInternalServerError,
 			expBody:   `{"error":"logic.Users error"}`,
 		},
 		{
 			name:      "ok",
+			token:     th.newToken(t, expEmail, expRoles),
+			expCalled: true,
 			expStatus: http.StatusOK,
 			expBody:   `[{"email":"test@email.com","roles":1}]`,
 		},
@@ -45,7 +60,7 @@ func TestUsers(t *testing.T) {
 				return expUsers, tc.retErr
 			}
 
-			req := th.makeRequest(t, http.MethodGet, "/users", nil)
+			req := th.makeRequest(t, http.MethodGet, "/users", nil, tc.token)
 			resp := mustDo(t, req)
 			defer resp.Body.Close()
 
@@ -55,7 +70,7 @@ func TestUsers(t *testing.T) {
 			require.Equal(t, tc.expStatus, resp.StatusCode)
 			require.Equal(t, tc.expBody, string(body))
 
-			require.True(t, called)
+			require.Equal(t, tc.expCalled, called)
 		})
 	}
 }
@@ -72,8 +87,9 @@ func TestCreateUser(t *testing.T) {
 	}
 
 	cases := []struct {
-		name string
-		body interface{}
+		name  string
+		token string
+		body  interface{}
 
 		expCalled bool
 		retErr    error
@@ -83,12 +99,21 @@ func TestCreateUser(t *testing.T) {
 	}{
 		{
 			name:      "invalid body",
+			token:     th.newToken(t, expEmail, expRoles),
 			body:      "bogus data",
 			expStatus: http.StatusInternalServerError,
 			expBody:   `{"error":"JSON decoding failed: json: cannot unmarshal string into Go value of type gauth.UserRequest"}`,
 		},
 		{
+			name:      "non-admin create admin user",
+			token:     th.newToken(t, expEmail, gauth.RolesBase),
+			body:      expReq,
+			expStatus: http.StatusBadRequest,
+			expBody:   `{"error":"only admin can create a new admin user"}`,
+		},
+		{
 			name:      "logic.CreateUser error",
+			token:     th.newToken(t, expEmail, expRoles),
 			body:      expReq,
 			expCalled: true,
 			retErr:    errors.New("logic.CreateUser error"),
@@ -97,6 +122,7 @@ func TestCreateUser(t *testing.T) {
 		},
 		{
 			name:      "ok",
+			token:     th.newToken(t, expEmail, expRoles),
 			body:      expReq,
 			expCalled: true,
 			expStatus: http.StatusOK,
@@ -115,7 +141,7 @@ func TestCreateUser(t *testing.T) {
 
 			byt := mustMarshal(t, tc.body)
 			BodyReader := bytes.NewBuffer(byt)
-			req := th.makeRequest(t, http.MethodPost, "/users", BodyReader)
+			req := th.makeRequest(t, http.MethodPost, "/users", BodyReader, tc.token)
 			resp := mustDo(t, req)
 			defer resp.Body.Close()
 
@@ -138,21 +164,38 @@ func TestUserByEmail(t *testing.T) {
 	expUser := gauth.User{Email: expEmail, PasswordHash: expHash, Roles: expRoles}
 
 	cases := []struct {
-		name string
+		name  string
+		token string
 
-		retErr error
+		expCalled bool
+		retErr    error
 
 		expStatus int
 		expBody   string
 	}{
 		{
+			name:      "no token",
+			expStatus: http.StatusForbidden,
+			expBody:   `{"error":"forbidden"}`,
+		},
+		{
+			name:      "non-admin user lookup different user",
+			token:     th.newToken(t, "diff@email.com", gauth.RolesBase),
+			expStatus: http.StatusBadRequest,
+			expBody:   `{"error":"non-admin users can only look up their own user account"}`,
+		},
+		{
 			name:      "logic.UserByEmail error",
+			token:     th.newToken(t, expEmail, expRoles),
+			expCalled: true,
 			retErr:    errors.New("logic.UserByEmail error"),
 			expStatus: http.StatusInternalServerError,
 			expBody:   `{"error":"logic.UserByEmail error"}`,
 		},
 		{
 			name:      "ok",
+			token:     th.newToken(t, expEmail, expRoles),
+			expCalled: true,
 			expStatus: http.StatusOK,
 			expBody:   `{"email":"email@test.com","roles":1}`,
 		},
@@ -167,7 +210,7 @@ func TestUserByEmail(t *testing.T) {
 				return expUser, tc.retErr
 			}
 
-			req := th.makeRequest(t, http.MethodGet, fmt.Sprintf("/users/%s", expEmail), nil)
+			req := th.makeRequest(t, http.MethodGet, fmt.Sprintf("/users/%s", expEmail), nil, tc.token)
 			resp := mustDo(t, req)
 			defer resp.Body.Close()
 
@@ -177,7 +220,7 @@ func TestUserByEmail(t *testing.T) {
 			require.Equal(t, tc.expStatus, resp.StatusCode)
 			require.Equal(t, tc.expBody, string(body))
 
-			require.True(t, called)
+			require.Equal(t, tc.expCalled, called)
 		})
 	}
 }
@@ -196,8 +239,9 @@ func TestUpdateUser(t *testing.T) {
 	}
 
 	cases := []struct {
-		name string
-		body interface{}
+		name  string
+		token string
+		body  interface{}
 
 		expCalled bool
 		retErr    error
@@ -206,13 +250,37 @@ func TestUpdateUser(t *testing.T) {
 		expBody   string
 	}{
 		{
+			name:      "no token",
+			expStatus: http.StatusForbidden,
+			expBody:   `{"error":"forbidden"}`,
+		},
+		{
 			name:      "invalid body",
+			token:     th.newToken(t, expEmail, gauth.RolesAdmin),
 			body:      "bogus data",
 			expStatus: http.StatusInternalServerError,
 			expBody:   `{"error":"JSON decoding failed: json: cannot unmarshal string into Go value of type gauth.UserRequest"}`,
 		},
 		{
+			name:      "non-admin update different account",
+			token:     th.newToken(t, "diff@email.com", gauth.RolesBase),
+			expStatus: http.StatusBadRequest,
+			expBody:   `{"error":"non-admin users can only update their own user account"}`,
+		},
+		{
+			name:  "non-admin update to admin role",
+			token: th.newToken(t, expEmail, gauth.RolesBase),
+			body: func() gauth.UserRequest {
+				ret := expReq
+				ret.Roles = gauth.RolesAdmin
+				return ret
+			}(),
+			expStatus: http.StatusBadRequest,
+			expBody:   `{"error":"non-admin users update their roles to include admin users"}`,
+		},
+		{
 			name:      "logic.UpdateUser error",
+			token:     th.newToken(t, expEmail, gauth.RolesAdmin),
 			body:      expReq,
 			expCalled: true,
 			retErr:    errors.New("logic.UpdateUser error"),
@@ -221,6 +289,7 @@ func TestUpdateUser(t *testing.T) {
 		},
 		{
 			name:      "ok",
+			token:     th.newToken(t, expEmail, gauth.RolesAdmin),
 			body:      expReq,
 			expCalled: true,
 			expStatus: http.StatusOK,
@@ -240,7 +309,7 @@ func TestUpdateUser(t *testing.T) {
 
 			byt := mustMarshal(t, tc.body)
 			BodyReader := bytes.NewBuffer(byt)
-			req := th.makeRequest(t, http.MethodPost, fmt.Sprintf("/users/%s", expEmail), BodyReader)
+			req := th.makeRequest(t, http.MethodPost, fmt.Sprintf("/users/%s", expEmail), BodyReader, tc.token)
 			resp := mustDo(t, req)
 			defer resp.Body.Close()
 
@@ -260,21 +329,38 @@ func TestDeleteUser(t *testing.T) {
 	expEmail := "email@test.com"
 
 	cases := []struct {
-		name string
+		name  string
+		token string
 
-		retErr error
+		expCalled bool
+		retErr    error
 
 		expStatus int
 		expBody   string
 	}{
 		{
+			name:      "no token",
+			expStatus: http.StatusForbidden,
+			expBody:   `{"error":"forbidden"}`,
+		},
+		{
+			name:      "non-admin delete different user account",
+			token:     th.newToken(t, "diff@email.com", gauth.RolesBase),
+			expStatus: http.StatusBadRequest,
+			expBody:   `{"error":"non-admin users can only delete their own user account"}`,
+		},
+		{
 			name:      "logic.DeleteUser error",
+			token:     th.newToken(t, expEmail, gauth.RolesBase),
+			expCalled: true,
 			retErr:    errors.New("logic.DeleteUser error"),
 			expStatus: http.StatusInternalServerError,
 			expBody:   `{"error":"logic.DeleteUser error"}`,
 		},
 		{
 			name:      "ok",
+			token:     th.newToken(t, expEmail, gauth.RolesBase),
+			expCalled: true,
 			expStatus: http.StatusOK,
 			expBody:   `{}`,
 		},
@@ -289,7 +375,7 @@ func TestDeleteUser(t *testing.T) {
 				return tc.retErr
 			}
 
-			req := th.makeRequest(t, http.MethodDelete, fmt.Sprintf("/users/%s", expEmail), nil)
+			req := th.makeRequest(t, http.MethodDelete, fmt.Sprintf("/users/%s", expEmail), nil, tc.token)
 			resp := mustDo(t, req)
 			defer resp.Body.Close()
 
@@ -299,7 +385,7 @@ func TestDeleteUser(t *testing.T) {
 			require.Equal(t, tc.expStatus, resp.StatusCode)
 			require.Equal(t, tc.expBody, string(body))
 
-			require.True(t, called)
+			require.Equal(t, tc.expCalled, called)
 		})
 	}
 }
