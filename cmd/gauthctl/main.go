@@ -27,17 +27,18 @@ func main() {
 		if _, ok := app.Commands[os.Args[1]]; ok {
 			app.baseURL = getGauthURL()
 
-			tokenInfo, err := readTokenInfo()
+			sessionInfo, err := readSessionInfo()
 			if err != nil {
 				log.Fatal(err)
 			}
 
 			app.gauthClient, err = gauthclient.NewGauthClient(
 				getGauthURL(),
-				tokenInfo.Email,
+				sessionInfo.Email,
 				"",
-				tokenInfo.Token,
-				saveTokenInfo,
+				sessionInfo.Token,
+				sessionInfo.Cookie,
+				saveSessionInfo,
 			)
 			if err != nil {
 				log.Fatal(err)

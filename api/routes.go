@@ -12,6 +12,7 @@ func (h apiHandler) addRoutes() {
 
 	// Authenticate
 	router.Post("/authenticate", authenticate(h.logic))
+	router.Post("/logout", logout(h.logic))
 
 	// Public Key
 	router.Get("/publickey", publicKey(h.token))

@@ -10,9 +10,11 @@ import (
 
 func init() {
 	app.AddCommand(authenticateCommand)
+	app.AddCommand(logoutCommand)
+	app.AddCommand(whoamiCommand)
 }
 
-var authenticateCommand = cmd.NewCommand("auth", "Authenticate", "Authenticate",
+var authenticateCommand = cmd.NewCommand("auth", "Auth", "Authenticate",
 	func(cmd *cmd.Command) {
 		cmd.AppendArg("email", "Email")
 	},
@@ -31,6 +33,35 @@ var authenticateCommand = cmd.NewCommand("auth", "Authenticate", "Authenticate",
 		}
 
 		fmt.Println("authenticated")
+		return nil
+	},
+)
+
+var logoutCommand = cmd.NewCommand("logout", "Auth", "Logout",
+	func(cmd *cmd.Command) {},
+
+	func(cmd *cmd.Command) error {
+		if err := app.gauthClient.Logout(); err != nil {
+			return err
+		}
+
+		fmt.Println("logged out")
+		return nil
+	},
+)
+
+var whoamiCommand = cmd.NewCommand("whoami", "Auth", "Display current user",
+	func(cmd *cmd.Command) {},
+
+	func(cmd *cmd.Command) error {
+		sessionInfo, err := readSessionInfo()
+		if err != nil {
+			return err
+		}
+
+		fmt.Println("Email:", sessionInfo.Email)
+		fmt.Println("Token:", sessionInfo.Token)
+		fmt.Println("Cookie:", sessionInfo.Cookie)
 		return nil
 	},
 )

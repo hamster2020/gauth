@@ -7,32 +7,62 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
-func TestMapstoreCRUD(t *testing.T) {
+func TestMapstoreUserCRUD(t *testing.T) {
 	m := NewMapStore()
 
 	key := "key"
 	value := gauth.User{Email: "old"}
 	newValue := gauth.User{Email: "new"}
 
-	v, err := m.get(key)
+	v, err := m.getUser(key)
 	require.Equal(t, notFoundErr, err)
 	require.Zero(t, v)
 
-	m.set(key, value)
+	m.setUser(key, value)
 
-	v, err = m.get(key)
+	v, err = m.getUser(key)
 	require.NoError(t, err)
 	require.Equal(t, value, v)
 
-	m.set(key, newValue)
+	m.setUser(key, newValue)
 
-	v, err = m.get(key)
+	v, err = m.getUser(key)
 	require.NoError(t, err)
 	require.Equal(t, newValue, v)
 
-	m.delete(key)
+	m.deleteUser(key)
 
-	v, err = m.get(key)
+	v, err = m.getUser(key)
+	require.Equal(t, notFoundErr, err)
+	require.Zero(t, v)
+}
+
+func TestMapstoreSessionCRUD(t *testing.T) {
+	m := NewMapStore()
+
+	key := "key"
+	value := gauth.Session{Cookie: "old"}
+	newValue := gauth.Session{Cookie: "new"}
+
+	v, err := m.getSession(key)
+	require.Equal(t, notFoundErr, err)
+	require.Zero(t, v)
+
+	m.setSession(key, value)
+
+	v, err = m.getSession(key)
+	require.NoError(t, err)
+	require.Equal(t, value, v)
+
+	m.setSession(key, newValue)
+
+	v, err = m.getSession(key)
+	require.NoError(t, err)
+	require.Equal(t, newValue, v)
+
+	m.deleteSession(key)
+
+	v, err = m.getSession(key)
 	require.Equal(t, notFoundErr, err)
 	require.Zero(t, v)
 }

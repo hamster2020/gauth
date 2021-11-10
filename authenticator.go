@@ -7,4 +7,5 @@ type Authenticator interface {
 	SetPassword(password string)
 	Authenticate() error
 	DoAuthenticatedRequest(req *http.Request, respBody interface{}) error
+	Logout() error
 }

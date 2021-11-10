@@ -3,6 +3,7 @@ package logic
 import (
 	"errors"
 	"testing"
+	"time"
 
 	"github.com/hamster2020/gauth"
 	"github.com/hamster2020/gauth/mocks"
@@ -18,47 +19,127 @@ func TestAuthenticate(t *testing.T) {
 	expRoles := gauth.RolesAdmin
 	expUser := gauth.User{Email: expEmail, PasswordHash: expHash, Roles: expRoles}
 
+	expCookie := "cookie!"
+
 	expToken := "token"
 
-	cases := []struct {
-		name string
+	tomorrow := time.Now().UTC().AddDate(0, 0, 1)
+	expSession := gauth.Session{Cookie: expCookie, UserEmail: expEmail, ExpiresAt: tomorrow}
 
-		retUserByEmailErr error
+	cases := []struct {
+		name   string
+		c      gauth.Credentials
+		cookie string
+
+		expUserByEmailCalled bool
+		retUserByEmailErr    error
 
 		expCheckPasswordFuncCalled bool
 		retCheckPasswordFunc       bool
 
+		expNewSessionFuncCalled bool
+		retNewSessionFuncErr    error
+
+		expCreateSessionCalled bool
+		retCreateSessionErr    error
+
+		expSessionByCookieCalled bool
+		retSessionByCookieErr    error
+
 		expNewUserTokenCalled bool
 		retNewUserTokenErr    error
 
-		expRet string
-		expErr error
+		expToken   string
+		expSession gauth.Session
+		expErr     error
 	}{
 		{
-			name:              "ds.UserByEmail error",
-			retUserByEmailErr: errors.New("ds.UserByEmail error"),
-			expErr:            errors.New("ds.UserByEmail error"),
+			name:                 "credentials - ds.UserByEmail error",
+			c:                    expCred,
+			expUserByEmailCalled: true,
+			retUserByEmailErr:    errors.New("ds.UserByEmail error"),
+			expErr:               errors.New("ds.UserByEmail error"),
 		},
 		{
-			name:                       "ok",
+			name:                       "credentials - checkPasswordFunc error",
+			c:                          expCred,
+			expUserByEmailCalled:       true,
 			expCheckPasswordFuncCalled: true,
 			retCheckPasswordFunc:       false,
 			expErr:                     errors.New("unauthorized"),
 		},
 		{
-			name:                       "NewUserToken error",
+			name:                       "credentials - newSessionFunc error",
+			c:                          expCred,
+			expUserByEmailCalled:       true,
 			expCheckPasswordFuncCalled: true,
 			retCheckPasswordFunc:       true,
-			expNewUserTokenCalled:      true,
-			retNewUserTokenErr:         errors.New("NewUserToken error"),
-			expErr:                     errors.New("NewUserToken error"),
+			expNewSessionFuncCalled:    true,
+			retNewSessionFuncErr:       errors.New("ds.UserByEmail error"),
+			expErr:                     errors.New("ds.UserByEmail error"),
 		},
 		{
-			name:                       "ok",
+			name:                       "credentials - ds.CreateSession error",
+			c:                          expCred,
+			expUserByEmailCalled:       true,
 			expCheckPasswordFuncCalled: true,
 			retCheckPasswordFunc:       true,
+			expNewSessionFuncCalled:    true,
+			expCreateSessionCalled:     true,
+			retCreateSessionErr:        errors.New("ds.CreateSession error"),
+			expErr:                     errors.New("ds.CreateSession error"),
+		},
+		{
+			name:                     "cookie - ds.SessionByCookie error",
+			cookie:                   expCookie,
+			expSessionByCookieCalled: true,
+			retSessionByCookieErr:    errors.New("ds.SessionByCookie error"),
+			expErr:                   errors.New("ds.SessionByCookie error"),
+		},
+		{
+			name:                     "cookie - ds.UserByEmail error",
+			cookie:                   expCookie,
+			expSessionByCookieCalled: true,
+			expUserByEmailCalled:     true,
+			retUserByEmailErr:        errors.New("ds.UserByEmail error"),
+			expErr:                   errors.New("ds.UserByEmail error"),
+		},
+		{
+			name:   "no auth provided",
+			expErr: errors.New("must provide either email and password or session cookie"),
+		},
+		{
+			name:                       "token.NewUserToken error",
+			c:                          expCred,
+			expUserByEmailCalled:       true,
+			expCheckPasswordFuncCalled: true,
+			retCheckPasswordFunc:       true,
+			expNewSessionFuncCalled:    true,
+			expCreateSessionCalled:     true,
 			expNewUserTokenCalled:      true,
-			expRet:                     expToken,
+			retNewUserTokenErr:         errors.New("token.NewUserToken error"),
+			expErr:                     errors.New("token.NewUserToken error"),
+		},
+		{
+			name:                       "credentials - ok",
+			c:                          expCred,
+			expUserByEmailCalled:       true,
+			expCheckPasswordFuncCalled: true,
+			retCheckPasswordFunc:       true,
+			expNewSessionFuncCalled:    true,
+			expCreateSessionCalled:     true,
+			expNewUserTokenCalled:      true,
+			expToken:                   expToken,
+			expSession:                 expSession,
+		},
+		{
+			name:                     "cookie - ok",
+			cookie:                   expCookie,
+			expSessionByCookieCalled: true,
+			expUserByEmailCalled:     true,
+			expNewUserTokenCalled:    true,
+			expToken:                 expToken,
+			expSession:               expSession,
 		},
 	}
 
@@ -81,22 +162,54 @@ func TestAuthenticate(t *testing.T) {
 				return tc.retCheckPasswordFunc
 			}
 
-			token := mocks.NewMockToken()
+			newSessionFuncCalled := false
+			newSessionFunc := func(email string) (gauth.Session, error) {
+				newSessionFuncCalled = true
+				require.Equal(t, expEmail, email)
+				return expSession, tc.retNewSessionFuncErr
+			}
+
+			createSessionCalled := false
+			ds.CreateSessionFunc = func(session gauth.Session) error {
+				createSessionCalled = true
+				require.Equal(t, expSession, session)
+				return tc.retCreateSessionErr
+			}
+
+			sessionByCookieCalled := false
+			ds.SessionByCookieFunc = func(cookie string) (gauth.Session, error) {
+				sessionByCookieCalled = true
+				require.Equal(t, expCookie, cookie)
+				return expSession, tc.retSessionByCookieErr
+			}
+
+			tokens := mocks.NewMockToken()
 
 			newUserTokenCalled := false
-			token.NewUserTokenFunc = func(email string, roles gauth.Roles) (string, error) {
+			tokens.NewUserTokenFunc = func(email string, roles gauth.Roles) (string, error) {
 				newUserTokenCalled = true
 				require.Equal(t, expEmail, email)
 				require.Equal(t, expRoles, roles)
 				return expToken, tc.retNewUserTokenErr
 			}
 
-			ret, err := authenticate(ds, token, expCred, checkPasswordFunc)
+			token, session, err := authenticate(
+				ds,
+				tokens,
+				tc.c,
+				tc.cookie,
+				newSessionFunc,
+				checkPasswordFunc,
+			)
 			require.Equal(t, tc.expErr, err)
-			require.Equal(t, tc.expRet, ret)
+			require.Equal(t, tc.expToken, token)
+			require.Equal(t, tc.expSession, session)
 
-			require.True(t, userByEmailFuncCalled)
+			require.Equal(t, tc.expUserByEmailCalled, userByEmailFuncCalled)
 			require.Equal(t, tc.expCheckPasswordFuncCalled, checkPasswordFuncCalled)
+			require.Equal(t, tc.expNewSessionFuncCalled, newSessionFuncCalled)
+			require.Equal(t, tc.expCreateSessionCalled, createSessionCalled)
+			require.Equal(t, tc.expSessionByCookieCalled, sessionByCookieCalled)
 			require.Equal(t, tc.expNewUserTokenCalled, newUserTokenCalled)
 		})
 	}

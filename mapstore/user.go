@@ -14,7 +14,7 @@ func newCred(email, hash string, roles gauth.Roles) gauth.User {
 }
 
 func (m mapStore) CreateUser(user gauth.User) error {
-	_, err := m.get(user.Email)
+	_, err := m.getUser(user.Email)
 	if err == nil {
 		return userExistsErr
 	}
@@ -22,12 +22,12 @@ func (m mapStore) CreateUser(user gauth.User) error {
 		return err
 	}
 
-	m.set(user.Email, user)
+	m.setUser(user.Email, user)
 	return nil
 }
 
 func (m mapStore) UserByEmail(email string) (gauth.User, error) {
-	user, err := m.get(email)
+	user, err := m.getUser(email)
 	if err != nil {
 		return gauth.User{}, err
 	}
@@ -36,25 +36,25 @@ func (m mapStore) UserByEmail(email string) (gauth.User, error) {
 }
 
 func (m mapStore) UpdateUser(email string, user gauth.User) error {
-	_, err := m.get(email)
+	_, err := m.getUser(email)
 	if err != nil {
 		return err
 	}
 
-	m.delete(email)
-	m.set(user.Email, user)
+	m.deleteUser(email)
+	m.setUser(user.Email, user)
 	return nil
 }
 
 func (m mapStore) DeleteUser(email string) error {
-	m.delete(email)
+	m.deleteUser(email)
 	return nil
 }
 
 func (m mapStore) Users() ([]gauth.User, error) {
-	ret := make([]gauth.User, len(m))
+	ret := make([]gauth.User, len(m.users))
 	i := 0
-	for _, user := range m {
+	for _, user := range m.users {
 		ret[i] = user
 		i++
 	}

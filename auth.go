@@ -7,5 +7,6 @@ type Credentials struct {
 
 type AuthLogic interface {
 	// General Use
-	Authenticate(c Credentials) (string, error)
+	Authenticate(c Credentials, cookie string) (string, Session, error)
+	Logout(cookie string) error
 }
