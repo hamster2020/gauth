@@ -22,9 +22,10 @@ func NewGauthClient(
 	email string,
 	password string,
 	token string,
-	saveSessionCredentials func(email, password string) error,
+	cookie string,
+	saveSessionCredentials func(email, token, cookie string) error,
 ) (GauthClient, error) {
-	authClient, err := authenticator.NewAuthClient(baseURL, email, password, token, saveSessionCredentials)
+	authClient, err := authenticator.NewAuthClient(baseURL, email, password, token, cookie, saveSessionCredentials)
 	if err != nil {
 		return GauthClient{}, err
 	}

@@ -6,20 +6,26 @@ import (
 	"github.com/hamster2020/gauth"
 )
 
-type mapStore map[string]gauth.User
+type mapStore struct {
+	users    map[string]gauth.User
+	sessions map[string]gauth.Session
+}
 
 var notFoundErr = errors.New("not found")
 
 func NewMapStore() mapStore {
-	return make(map[string]gauth.User)
+	return mapStore{
+		users:    make(map[string]gauth.User),
+		sessions: make(map[string]gauth.Session),
+	}
 }
 
-func (m mapStore) set(key string, value gauth.User) {
-	m[key] = value
+func (m mapStore) setUser(key string, value gauth.User) {
+	m.users[key] = value
 }
 
-func (m mapStore) get(key string) (gauth.User, error) {
-	value, found := m[key]
+func (m mapStore) getUser(key string) (gauth.User, error) {
+	value, found := m.users[key]
 	if !found {
 		return gauth.User{}, notFoundErr
 	}
@@ -27,6 +33,23 @@ func (m mapStore) get(key string) (gauth.User, error) {
 	return value, nil
 }
 
-func (m mapStore) delete(key string) {
-	delete(m, key)
+func (m mapStore) deleteUser(key string) {
+	delete(m.users, key)
+}
+
+func (m mapStore) setSession(key string, value gauth.Session) {
+	m.sessions[key] = value
+}
+
+func (m mapStore) getSession(key string) (gauth.Session, error) {
+	value, found := m.sessions[key]
+	if !found {
+		return gauth.Session{}, notFoundErr
+	}
+
+	return value, nil
+}
+
+func (m mapStore) deleteSession(key string) {
+	delete(m.sessions, key)
 }

@@ -7,16 +7,17 @@ import (
 	"path"
 )
 
-const gauthTokenInfoFilename = "gauth.token"
+const gauthSessionInfoFilename = "gauth.token"
 
-type TokenInfo struct {
-	Email string
-	Token string
+type SessionInfo struct {
+	Email  string
+	Token  string
+	Cookie string
 }
 
-func saveTokenInfo(email, token string) error {
+func saveSessionInfo(email, token, cookie string) error {
 	if email == "" {
-		return clearTokenInfo()
+		return clearSessionInfo()
 	}
 
 	usr, err := user.Current()
@@ -29,8 +30,8 @@ func saveTokenInfo(email, token string) error {
 		return err
 	}
 
-	tokenPath := path.Join(dirPath, gauthTokenInfoFilename)
-	f, err := os.OpenFile(tokenPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0600))
+	infoPath := path.Join(dirPath, gauthSessionInfoFilename)
+	f, err := os.OpenFile(infoPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, os.FileMode(0600))
 	if err != nil {
 		return err
 	}
@@ -38,50 +39,51 @@ func saveTokenInfo(email, token string) error {
 	defer f.Close()
 
 	enc := json.NewEncoder(f)
-	tokenInfo := TokenInfo{
-		Email: email,
-		Token: token,
+	sessionInfo := SessionInfo{
+		Email:  email,
+		Token:  token,
+		Cookie: cookie,
 	}
 
-	return enc.Encode(tokenInfo)
+	return enc.Encode(sessionInfo)
 }
 
-func readTokenInfo() (TokenInfo, error) {
+func readSessionInfo() (SessionInfo, error) {
 	usr, err := user.Current()
 	if err != nil {
-		return TokenInfo{}, err
+		return SessionInfo{}, err
 	}
 
-	tokenPath := path.Join(usr.HomeDir, ".config", gauthTokenInfoFilename)
-	f, err := os.Open(tokenPath)
+	infoPath := path.Join(usr.HomeDir, ".config", gauthSessionInfoFilename)
+	f, err := os.Open(infoPath)
 	if err != nil {
 		if !os.IsNotExist(err) {
-			return TokenInfo{}, err
+			return SessionInfo{}, err
 		}
 
-		return TokenInfo{}, nil
+		return SessionInfo{}, nil
 	}
 
 	defer f.Close()
 
 	dec := json.NewDecoder(f)
-	var ti TokenInfo
-	if err := dec.Decode(&ti); err != nil {
-		err = clearTokenInfo()
-		return TokenInfo{}, err
+	var info SessionInfo
+	if err := dec.Decode(&info); err != nil {
+		err = clearSessionInfo()
+		return SessionInfo{}, err
 	}
 
-	return ti, nil
+	return info, nil
 }
 
-func clearTokenInfo() error {
+func clearSessionInfo() error {
 	usr, err := user.Current()
 	if err != nil {
 		return err
 	}
 
-	tokenPath := path.Join(usr.HomeDir, ".config", gauthTokenInfoFilename)
-	if err := os.Remove(tokenPath); err != nil && !os.IsNotExist(err) {
+	infoPath := path.Join(usr.HomeDir, ".config", gauthSessionInfoFilename)
+	if err := os.Remove(infoPath); err != nil && !os.IsNotExist(err) {
 		return err
 	}
 

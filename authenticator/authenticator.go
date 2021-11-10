@@ -20,7 +20,8 @@ type AuthClient struct {
 	email                  string
 	password               string
 	token                  string
-	saveSessionCredentials func(email, token string) error
+	cookie                 string
+	saveSessionCredentials func(email, token, cookie string) error
 }
 
 func NewAuthClient(
@@ -28,7 +29,8 @@ func NewAuthClient(
 	email string,
 	password string,
 	token string,
-	saveSessionCredentials func(email, token string) error,
+	cookie string,
+	saveSessionCredentials func(email, token, cookie string) error,
 ) (*AuthClient, error) {
 	if baseURL == "" {
 		return nil, errors.New("missing baseURL")
@@ -40,6 +42,7 @@ func NewAuthClient(
 		email:                  email,
 		password:               password,
 		token:                  token,
+		cookie:                 cookie,
 		saveSessionCredentials: saveSessionCredentials,
 	}
 
@@ -63,6 +66,9 @@ func (a *AuthClient) Authenticate() error {
 	}
 
 	req.Header.Add("Content-Type", "application/json")
+	if a.cookie != "" {
+		req.Header.Set("Cookie", fmt.Sprintf("session=%s", a.cookie))
+	}
 
 	resp, err := a.client.Do(req)
 	if err != nil {
@@ -85,31 +91,33 @@ func (a *AuthClient) Authenticate() error {
 	}
 
 	a.token = token
+	a.cookie = gauth.GetSessionCookie(resp.Cookies())
 	if a.saveSessionCredentials != nil {
-		a.saveSessionCredentials(a.email, a.token)
+		a.saveSessionCredentials(a.email, a.token, a.cookie)
 	}
 
 	return nil
 }
 
 func (a *AuthClient) onAuthErr() error {
+	if a.cookie == "" {
+		return errors.New("cannot retry request when missing cookie")
+	}
+
 	a.token = ""
 	if a.saveSessionCredentials != nil {
-		a.saveSessionCredentials(a.email, a.token)
+		a.saveSessionCredentials(a.email, a.token, a.cookie)
 	}
 
 	if err := a.Authenticate(); err != nil {
 		a.email = ""
 		a.token = ""
+		a.cookie = ""
 		if a.saveSessionCredentials != nil {
-			a.saveSessionCredentials(a.email, a.token)
+			a.saveSessionCredentials(a.email, a.token, a.cookie)
 		}
 
 		return err
-	}
-
-	if a.saveSessionCredentials != nil {
-		a.saveSessionCredentials(a.email, a.token)
 	}
 
 	return nil
@@ -176,4 +184,32 @@ func (a *AuthClient) doRequestCanRetry(req *http.Request, respBody interface{}, 
 
 func (a *AuthClient) DoAuthenticatedRequest(req *http.Request, respBody interface{}) error {
 	return a.doRequestCanRetry(req, respBody, true)
+}
+
+func (a *AuthClient) Logout() error {
+	req, err := http.NewRequest(http.MethodPost, a.baseURL+"/logout", nil)
+	if err != nil {
+		return err
+	}
+
+	req.Header.Add("Content-Type", "application/json")
+	req.Header.Set("Cookie", fmt.Sprintf("session=%s", a.cookie))
+
+	resp, err := a.client.Do(req)
+	if err != nil {
+		return err
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		return fmt.Errorf("invalid status code: %d", resp.StatusCode)
+	}
+
+	a.cookie = ""
+	a.token = ""
+	if a.saveSessionCredentials != nil {
+		a.saveSessionCredentials(a.email, a.token, a.cookie)
+	}
+
+	return nil
 }

@@ -6,7 +6,8 @@ package mocks
 import "github.com/hamster2020/gauth"
 
 type MockLogic struct {
-	AuthenticateFunc func(c gauth.Credentials) (string, error)
+	AuthenticateFunc func(c gauth.Credentials, cookie string) (string, gauth.Session, error)
+	LogoutFunc       func(cookie string) error
 	CreateUserFunc   func(req gauth.UserRequest) error
 	UserByEmailFunc  func(email string) (gauth.User, error)
 	UpdateUserFunc   func(oldEmail string, req gauth.UserRequest) error
@@ -18,8 +19,12 @@ func NewMockLogic() *MockLogic {
 	return &MockLogic{}
 }
 
-func (logic *MockLogic) Authenticate(c gauth.Credentials) (string, error) {
-	return logic.AuthenticateFunc(c)
+func (logic *MockLogic) Authenticate(c gauth.Credentials, cookie string) (string, gauth.Session, error) {
+	return logic.AuthenticateFunc(c, cookie)
+}
+
+func (logic *MockLogic) Logout(cookie string) error {
+	return logic.LogoutFunc(cookie)
 }
 
 func (logic *MockLogic) CreateUser(req gauth.UserRequest) error {

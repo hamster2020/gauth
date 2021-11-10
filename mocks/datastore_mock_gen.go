@@ -6,15 +6,30 @@ package mocks
 import "github.com/hamster2020/gauth"
 
 type mockDatastore struct {
-	CreateUserFunc  func(u gauth.User) error
-	UserByEmailFunc func(email string) (gauth.User, error)
-	UpdateUserFunc  func(email string, u gauth.User) error
-	DeleteUserFunc  func(email string) error
-	UsersFunc       func() ([]gauth.User, error)
+	CreateSessionFunc   func(session gauth.Session) error
+	SessionByCookieFunc func(cookie string) (gauth.Session, error)
+	DeleteSessionFunc   func(email string) error
+	CreateUserFunc      func(u gauth.User) error
+	UserByEmailFunc     func(email string) (gauth.User, error)
+	UpdateUserFunc      func(email string, u gauth.User) error
+	DeleteUserFunc      func(email string) error
+	UsersFunc           func() ([]gauth.User, error)
 }
 
 func NewMockDatastore() *mockDatastore {
 	return &mockDatastore{}
+}
+
+func (ds *mockDatastore) CreateSession(session gauth.Session) error {
+	return ds.CreateSessionFunc(session)
+}
+
+func (ds *mockDatastore) SessionByCookie(cookie string) (gauth.Session, error) {
+	return ds.SessionByCookieFunc(cookie)
+}
+
+func (ds *mockDatastore) DeleteSession(email string) error {
+	return ds.DeleteSessionFunc(email)
 }
 
 func (ds *mockDatastore) CreateUser(u gauth.User) error {
