@@ -1,0 +1,11 @@
+#!/bin/ash
+
+sleep 10
+/gauth/gauthctl migrate-db
+/gauth/gauthctl create-admin --password ${ADMIN_PASSWORD} ${ADMIN_EMAIL}
+{
+  sleep 5
+  until /gauth/gauthctl auth --password ${ADMIN_PASSWORD} ${ADMIN_EMAIL}; do sleep 2; done
+  echo -e "\n###################### Gauth is ready #######################\n"
+} &
+exec /gauth/gauth

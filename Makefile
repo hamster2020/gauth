@@ -1,9 +1,20 @@
-.PHONY: check install mocks
+.PHONY: check check-docker createdb dropdb install mocks
 
 check:
 	@go fmt ./...
 	@go vet ./...
 	@go test -cover -race ./... 
+
+check-docker:
+	@go fmt ./...
+	@go vet ./...
+	@go test -cover -race `go list ./... | grep -v postgres | grep -v password-validator`
+
+createdb:
+	@createdb gauth || true
+
+dropdb:
+	@dropdb gauth || true
 
 install:
 	@go install ./...

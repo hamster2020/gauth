@@ -8,12 +8,13 @@ import "github.com/hamster2020/gauth"
 type mockDatastore struct {
 	CreateSessionFunc   func(session gauth.Session) error
 	SessionByCookieFunc func(cookie string) (gauth.Session, error)
-	DeleteSessionFunc   func(email string) error
+	DeleteSessionFunc   func(cookie string) error
 	CreateUserFunc      func(u gauth.User) error
 	UserByEmailFunc     func(email string) (gauth.User, error)
 	UpdateUserFunc      func(email string, u gauth.User) error
 	DeleteUserFunc      func(email string) error
 	UsersFunc           func() ([]gauth.User, error)
+	InsideTxFunc        func(fn func(tx gauth.Transaction) error) error
 }
 
 func NewMockDatastore() *mockDatastore {
@@ -28,8 +29,8 @@ func (ds *mockDatastore) SessionByCookie(cookie string) (gauth.Session, error) {
 	return ds.SessionByCookieFunc(cookie)
 }
 
-func (ds *mockDatastore) DeleteSession(email string) error {
-	return ds.DeleteSessionFunc(email)
+func (ds *mockDatastore) DeleteSession(cookie string) error {
+	return ds.DeleteSessionFunc(cookie)
 }
 
 func (ds *mockDatastore) CreateUser(u gauth.User) error {
@@ -50,4 +51,8 @@ func (ds *mockDatastore) DeleteUser(email string) error {
 
 func (ds *mockDatastore) Users() ([]gauth.User, error) {
 	return ds.UsersFunc()
+}
+
+func (ds *mockDatastore) InsideTx(fn func(tx gauth.Transaction) error) error {
+	return ds.InsideTxFunc(fn)
 }

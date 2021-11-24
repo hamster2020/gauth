@@ -1,0 +1,40 @@
+version: "3"
+
+networks:
+  private:
+  public:
+
+volumes:
+  postgres:
+
+services:
+  gauth-web:
+    build:
+      context: .
+    networks:
+      private:
+      public:
+        aliases:
+          - gauth
+    ports:
+      - "3000:3000"
+    environment:
+      GAUTH_DB_URL: postgres://postgres:mypassword@db/gauth?sslmode=disable
+      ADMIN_EMAIL: "test@gmail.com"
+      ADMIN_PASSWORD: "admin.123"
+      GAUTH_WEB_URL: ${GAUTH_WEB_URL}
+      GAUTH_EMAIL_VERIFIER_TOKEN: ${GAUTH_EMAIL_VERIFIER_TOKEN}
+      GAUTH_PWNED_PASSWORDS_URL: ${GAUTH_PWNED_PASSWORDS_URL}
+    depends_on:
+      - db
+    restart: always
+  db:
+    image: postgres:13.2
+    volumes:
+      - postgres:/var/lib/postgresql/data
+    networks:
+      - private
+    environment:
+      POSTGRES_PASSWORD: mypassword
+      POSTGRES_DB: gauth
+    restart: always
