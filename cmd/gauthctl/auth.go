@@ -17,17 +17,22 @@ func init() {
 var authenticateCommand = cmd.NewCommand("auth", "Auth", "Authenticate",
 	func(cmd *cmd.Command) {
 		cmd.AppendArg("email", "Email")
+		cmd.Flags.String("password", "", "Password for the user")
 	},
 
 	func(cmd *cmd.Command) error {
-		fmt.Println("please provide a password")
-		passwordBytes, err := terminal.ReadPassword(syscall.Stdin)
-		if err != nil {
-			return err
+		password := cmd.Flag("password").String()
+		if password == "" {
+			fmt.Println("please provide a password")
+			passwordBytes, err := terminal.ReadPassword(syscall.Stdin)
+			if err != nil {
+				return err
+			}
+
+			password = string(passwordBytes)
 		}
 
 		email := cmd.Arg("email").String()
-		password := string(passwordBytes)
 		if err := app.gauthClient.Authenticate(email, password); err != nil {
 			return err
 		}

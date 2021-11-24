@@ -2,17 +2,7 @@ package logic
 
 import (
 	"github.com/hamster2020/gauth"
-	"golang.org/x/crypto/bcrypt"
 )
-
-func hashPassword(password string) (string, error) {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		return "", err
-	}
-
-	return string(hash), nil
-}
 
 func (l logic) CreateUser(r gauth.UserRequest) error {
 	return createUser(
@@ -20,7 +10,7 @@ func (l logic) CreateUser(r gauth.UserRequest) error {
 		l.emailValidator,
 		l.passwordValidator,
 		r,
-		hashPassword,
+		gauth.HashPassword,
 	)
 }
 
@@ -64,7 +54,7 @@ func (l logic) UpdateUser(oldEmail string, r gauth.UserRequest) error {
 		l.passwordValidator,
 		oldEmail,
 		r,
-		hashPassword,
+		gauth.HashPassword,
 	)
 }
 

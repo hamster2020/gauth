@@ -1,9 +1,11 @@
 package gauth
 
+import "golang.org/x/crypto/bcrypt"
+
 type User struct {
-	Email        string `json:"email"`
-	PasswordHash string `json:"-"`
-	Roles        Roles  `json:"roles"`
+	Email        string `db:"email" json:"email"`
+	PasswordHash string `db:"password_hash" json:"-"`
+	Roles        Roles  `db:"roles" json:"roles"`
 }
 
 func (u User) Info() string {
@@ -16,6 +18,15 @@ func (u User) HasRole(role Roles) bool {
 
 func (u User) HasAtLeastOneRole(roles Roles) bool {
 	return u.Roles.HasAtLeastOneRole(roles)
+}
+
+func HashPassword(password string) (string, error) {
+	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
+	if err != nil {
+		return "", err
+	}
+
+	return string(hash), nil
 }
 
 type UserRequest struct {

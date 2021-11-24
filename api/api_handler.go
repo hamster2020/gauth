@@ -68,14 +68,14 @@ func (h apiHandler) ServeHTTP(w http.ResponseWriter, req *http.Request) {
 
 func (h apiHandler) ListenAndServe() error {
 	server := http.Server{
-		Addr:         h.cfg.CredAddress,
+		Addr:         h.cfg.GauthAddress,
 		ReadTimeout:  30 * time.Second,
 		WriteTimeout: 30 * time.Second,
 		IdleTimeout:  30 * time.Second,
 		Handler:      h,
 	}
 
-	log.Printf("gauth listening on %s", h.cfg.CredAddress)
+	log.Printf("gauth listening on %s", h.cfg.GauthAddress)
 	if err := server.ListenAndServe(); err != nil {
 		return err
 	}

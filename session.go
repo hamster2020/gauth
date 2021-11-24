@@ -5,14 +5,14 @@ import (
 )
 
 type Session struct {
-	Cookie    string
-	UserEmail string
-	ExpiresAt time.Time
+	Cookie    string    `db:"cookie"`
+	UserEmail string    `db:"user_email"`
+	ExpiresAt time.Time `db:"expires_at"`
 }
 
 type SessionStore interface {
 	//CRUD
 	CreateSession(session Session) error
 	SessionByCookie(cookie string) (Session, error)
-	DeleteSession(email string) error
+	DeleteSession(cookie string) error
 }

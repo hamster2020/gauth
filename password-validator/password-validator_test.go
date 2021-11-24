@@ -1,6 +1,7 @@
 package passwordvalidator
 
 import (
+	"fmt"
 	"testing"
 
 	"github.com/hamster2020/gauth"
@@ -11,6 +12,7 @@ func TestIsPasswordBreached(t *testing.T) {
 	cfg, err := gauth.NewConfig()
 	require.NoError(t, err)
 	pwdValidator := NewPasswordValidator(cfg.PwnedPasswordsURL)
+	fmt.Println(cfg.PwnedPasswordsURL)
 
 	cases := []struct {
 		name     string
